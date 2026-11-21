@@ -156,7 +156,7 @@ footer a{color:var(--text)}
   <div><h3>Contacto</h3><p><a href="tel:+529852853426" style="color:var(--text)">+52 985 285 3426</a><br><a href="https://wa.me/529852853426" style="color:var(--text)">Escríbenos por WhatsApp</a></p></div>
 </div></section>
 </main>
-<footer><div class="wrap">Barber Alex · Más que una barbería, un espacio creado con pasión para ti. <a href="#" id="adm" hidden style="color:var(--muted);margin-left:10px">Admin</a></div></footer>
+<footer><div class="wrap">Barber Alex · Más que una barbería, un espacio creado con pasión para ti.<div style="margin-top:14px"><a href="#" id="adm" hidden style="color:var(--text);text-decoration:underline;font-weight:500">Admin</a></div></div></footer>
 <div class="abox" id="ab" hidden><input id="ae" type="email" placeholder="Correo de Alex" autocomplete="username"><input id="ap" type="password" placeholder="Contraseña" autocomplete="current-password"><button class="btn" id="ain" type="button">Entrar</button> <button class="btn alt" id="acl" type="button">Cancelar</button><p class="msg" id="am"></p></div>
 <div class="modal" id="modal" role="dialog" aria-modal="true" aria-label="Reservar cita"><div class="sheet"><button class="x" id="cerrar" type="button" aria-label="Cerrar">×</button><h3 id="mt" style="font:700 1.7rem 'Barlow Condensed',sans-serif;margin:6px 0 12px">Reserva tu cita</h3><div class="svfoto" id="svfoto"></div><div id="slot"></div></div></div>
 
@@ -313,6 +313,7 @@ $('renv').onclick=async()=>{
  }catch(e){m.textContent='No se pudo enviar. Intenta de nuevo.'}
 };
 $('adm').hidden=false;
+if(location.hash==='#admin')$('ab').hidden=false;
 H.onAuthStateChanged(au,u=>{document.body.classList.toggle('admin',!!u);$('adm').textContent=u?'Salir':'Admin'});
 $('adm').onclick=e=>{e.preventDefault();if(au.currentUser){H.signOut(au);return}$('ab').hidden=false};
 $('ain').onclick=async()=>{try{await H.signInWithEmailAndPassword(au,$('ae').value.trim(),$('ap').value);$('ab').hidden=true;$('ap').value='';$('am').textContent=''}catch(e){$('am').textContent='Correo o contraseña incorrectos.'}};
