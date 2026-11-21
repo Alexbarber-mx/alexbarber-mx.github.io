@@ -66,13 +66,14 @@ footer a{color:var(--text)}
 .sheet .book{border:0;padding:0;background:transparent}
 .x{float:right;background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:50%;width:38px;height:38px;font-size:1.4rem;line-height:1;cursor:pointer}
 @media(min-width:700px){.modal{align-items:center}.sheet{border-radius:18px}}
+[hidden]{display:none!important}
+#hrs.picked .chip[aria-pressed=false]{display:none}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 .wordmark{display:block}.wordmark.big{width:min(520px,100%);height:auto;margin:0 0 4px -4px}.wordmark.small{width:122px;height:52px}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
-.shot{aspect-ratio:1;border-radius:var(--r);overflow:hidden;background:var(--panel);border:1px solid var(--line);padding:0;cursor:pointer;display:grid;place-items:center;color:var(--muted)}
+.shot{aspect-ratio:1;border-radius:var(--r);overflow:hidden;background:var(--panel);border:1px solid var(--line);padding:0;display:grid;place-items:center;color:var(--muted)}
 .shot img{width:100%;height:100%;object-fit:cover;display:block}
 .shot.ph{cursor:default;font-size:.9rem;text-align:center;padding:10px}
-.lb{position:fixed;inset:0;background:rgba(0,0,0,.92);display:none;align-items:center;justify-content:center;z-index:20;padding:16px}.lb.on{display:flex}.lb img{max-width:100%;max-height:100%;border-radius:8px}
 .stars{color:#e3b341;letter-spacing:2px;font-size:1.1rem}.stars i{color:#4a4a52;font-style:normal}
 .avg{display:flex;align-items:center;gap:14px;margin-bottom:22px}.avg .num{font:700 3.2rem 'Barlow Condensed',sans-serif;line-height:1}.avg small{color:var(--muted)}
 .revs{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));margin-bottom:22px}
@@ -115,9 +116,8 @@ footer a{color:var(--text)}
 
 <section id="trabajos"><div class="wrap">
   <h2>Nuestros trabajos</h2>
-  <p class="sub">Cortes y arreglos hechos en la barbería. Toca una foto para verla grande.</p>
+  <p class="sub">Cortes y arreglos hechos en la barbería.</p>
   <div class="grid" id="grid"></div>
-  <div class="lb" id="lb" role="dialog" aria-label="Foto ampliada"><img alt="Corte ampliado"></div>
 </div></section>
 
 <section id="resenas"><div class="wrap">
@@ -133,7 +133,7 @@ footer a{color:var(--text)}
   <div class="book">
     <div class="step stsvc"><b>Servicio</b><div class="chips" id="svc"></div></div>
     <div class="step"><label for="fecha">Día</label><input type="date" id="fecha"></div>
-    <div class="step"><b>Hora</b><div class="chips" id="hrs"></div><p class="msg" id="hmsg"></p></div>
+    <div class="step"><b>Hora</b><div class="chips" id="hrs"></div><button type="button" id="camh" class="chip" hidden style="margin-top:8px">Cambiar horario</button><p class="msg" id="hmsg"></p></div>
     <div class="step row">
       <div><label for="nom" style="display:block;font:700 1.15rem 'Barlow Condensed',sans-serif;margin-bottom:8px">Tu nombre</label><input id="nom" autocomplete="name" placeholder="Nombre"></div>
       <div><label for="tel" style="display:block;font:700 1.15rem 'Barlow Condensed',sans-serif;margin-bottom:8px">Tu teléfono</label><input id="tel" type="tel" autocomplete="tel" placeholder="985 000 0000"></div>
@@ -204,7 +204,7 @@ var SHEET_CSV_URL='';
 function taken(){return OCUPADAS[f.value]||[]}
 if(SHEET_CSV_URL){fetch(SHEET_CSV_URL).then(function(r){return r.text()}).then(function(t){t.split(/\r?\n/).forEach(function(l){var p=l.replace(/"/g,'').split(','),d=(p[0]||'').trim(),h=(p[1]||'').trim(),m;if(m=d.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/))d=m[3]+'-'+('0'+m[2]).slice(-2)+'-'+('0'+m[1]).slice(-2);else if(m=d.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/))d=m[1]+'-'+('0'+m[2]).slice(-2)+'-'+('0'+m[3]).slice(-2);else return;if(m=h.match(/^(\d{1,2}):(\d{2})/)){var hh=+m[1];if(/p\.?\s?m/i.test(h)&&hh<12)hh+=12;(OCUPADAS[d]=OCUPADAS[d]||[]).push(('0'+hh).slice(-2)+':'+m[2])}});if(f.value)horas()}).catch(function(){})}
 function horas(){
- var h=$('hrs');h.innerHTML='';sel.h=null;$('hmsg').textContent='';
+ var h=$('hrs');h.innerHTML='';sel.h=null;h.classList.remove('picked');$('camh').hidden=true;$('hmsg').textContent='';
  if(!f.value){$('hmsg').textContent='Elige primero un día.';upd();return}
  var p=f.value.split('-'),d=new Date(+p[0],p[1]-1,+p[2]);
  if(d.getDay()===0){$('hmsg').textContent='Los domingos estamos cerrados. Elige otro día.';upd();return}
@@ -213,13 +213,14 @@ function horas(){
   var t=String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0');
   var b=document.createElement('button');b.type='button';b.className='chip';b.textContent=t;b.setAttribute('aria-pressed','false');
   if(ocu.indexOf(t)>-1||(esHoy&&m<=now.getHours()*60+now.getMinutes()))b.disabled=true;
-  (function(b,t){b.onclick=function(){sel.h=t;[].forEach.call(h.children,function(c){c.setAttribute('aria-pressed',c===b)});upd()}})(b,t);
+  (function(b,t){b.onclick=function(){sel.h=t;[].forEach.call(h.children,function(c){c.setAttribute('aria-pressed',c===b)});h.classList.add('picked');$('camh').hidden=false;upd()}})(b,t);
   h.appendChild(b);
  }
  if(!h.querySelector('.chip:not(:disabled)'))$('hmsg').textContent='Ya no hay horarios libres este día. Elige otro día.';
  upd();
 }
 f.onchange=horas;f.oninput=horas;
+$('camh').onclick=function(){$('hrs').classList.remove('picked');this.hidden=true};
 function fechaTxt(){var p=f.value.split('-'),d=new Date(+p[0],p[1]-1,+p[2]);return d.toLocaleDateString('es-MX',{weekday:'long',day:'numeric',month:'long'})}
 function foto(){var bx=$('svfoto');if(!bx)return;bx.innerHTML='';if(sel.s===null){bx.style.display='none';return}bx.style.display='';var s=SERVICIOS[sel.s];if(s.f){var im=document.createElement('img');im.src=s.f;im.alt=s.n;bx.appendChild(im)}else{bx.textContent='Aquí va la foto de «'+s.n+'»'}}
 function upd(){foto();
@@ -256,10 +257,9 @@ var RESENAS=[
 ];
 var $=function(i){return document.getElementById(i)};
 function st(n){return '★'.repeat(n)+'<i>'+'★'.repeat(5-n)+'</i>'}
-var g=$('grid'),lb=$('lb');
-if(FOTOS.length){FOTOS.forEach(function(src){var b=document.createElement('button');b.type='button';b.className='shot';b.setAttribute('aria-label','Ver foto');var im=document.createElement('img');im.src=src;im.alt='Corte hecho en Barber Alex';im.loading='lazy';b.appendChild(im);b.onclick=function(){lb.querySelector('img').src=src;lb.classList.add('on')};g.appendChild(b)})}
+var g=$('grid');
+if(FOTOS.length){FOTOS.forEach(function(src){var b=document.createElement('div');b.className='shot';var im=document.createElement('img');im.src=src;im.alt='Corte hecho en Barber Alex';im.loading='lazy';b.appendChild(im);g.appendChild(b)})}
 else{for(var i=0;i<6;i++){var d=document.createElement('div');d.className='shot ph';d.textContent='Aquí va una foto de un corte';g.appendChild(d)}}
-lb.onclick=function(){lb.classList.remove('on')};
 // EJEMPLOS: cambia nombres y precios por los productos reales. f:'fotos/gel.jpg' agrega la foto.
 var PRODUCTOS=[
  {n:'Gel fijador',d:'Fijación fuerte, acabado natural',p:60},
