@@ -71,6 +71,7 @@ footer a{color:var(--text)}
 .rf{margin-top:18px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px;max-width:520px}.rf textarea{width:100%;min-height:90px;background:var(--bg);color:var(--text);border:1.5px solid var(--line);border-radius:var(--r);padding:12px;font:inherit}.rf .chips{margin:10px 0}.hp{position:absolute;left:-9999px}
 .del{display:none;margin-top:8px;background:transparent;color:#ff7b72;border:1px solid #5a2a28;border-radius:8px;padding:6px 12px;cursor:pointer}body.admin .del{display:inline-block}
 .abox{position:fixed;left:0;right:0;bottom:0;background:var(--panel);border-top:1px solid var(--line);padding:16px;z-index:40}.abox input{margin-bottom:8px}
+.rv{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px;margin:10px 0;display:grid;gap:2px}.rv small{color:var(--muted)}.rv.Atendida{border-left:4px solid #3fb950}.rv.Cancelada{opacity:.5;border-left:4px solid #d8352f}.acts{display:flex;gap:8px;margin-top:8px}.acts .chip{padding:6px 12px}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 .wordmark{display:block}.wordmark.big{width:min(520px,100%);height:auto;margin:0 0 4px -4px}.wordmark.small{width:122px;height:52px}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
@@ -156,7 +157,7 @@ footer a{color:var(--text)}
   <div><h3>Contacto</h3><p><a href="tel:+529852853426" style="color:var(--text)">+52 985 285 3426</a><br><a href="https://wa.me/529852853426" style="color:var(--text)">Escríbenos por WhatsApp</a></p></div>
 </div></section>
 </main>
-<footer><div class="wrap">Barber Alex · Más que una barbería, un espacio creado con pasión para ti.<div style="margin-top:14px"><a href="#" id="adm" hidden style="color:var(--text);text-decoration:underline;font-weight:500">Admin</a></div></div></footer>
+<footer><div class="wrap">Barber Alex · Más que una barbería, un espacio creado con pasión para ti.<div style="margin-top:14px"><a href="#" id="adm" hidden style="color:var(--text);text-decoration:underline;font-weight:500">Admin</a> <a href="#" id="rsv" hidden style="color:var(--text);text-decoration:underline;font-weight:500;margin-left:16px">Ver reservas</a></div></div></footer>
 <div class="abox" id="ab" hidden><input id="ae" type="email" placeholder="Correo de Alex" autocomplete="username"><input id="ap" type="password" placeholder="Contraseña" autocomplete="current-password"><button class="btn" id="ain" type="button">Entrar</button> <button class="btn alt" id="acl" type="button">Cancelar</button><p class="msg" id="am"></p></div>
 <div class="modal" id="modal" role="dialog" aria-modal="true" aria-label="Reservar cita"><div class="sheet"><button class="x" id="cerrar" type="button" aria-label="Cerrar">×</button><h3 id="mt" style="font:700 1.7rem 'Barlow Condensed',sans-serif;margin:6px 0 12px">Reserva tu cita</h3><div class="svfoto" id="svfoto"></div><div id="slot"></div></div></div>
 
@@ -203,7 +204,7 @@ function iso(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'
 var hoy=new Date();f.min=iso(hoy);
 var max=new Date();max.setDate(max.getDate()+45);f.max=iso(max);
 // Horas ocupadas a mano. Ejemplo: {'2026-11-21':['11:00','11:30']}
-var OCUPADAS={};
+var OCUPADAS=window.OCUPADAS={};
 // Enlace CSV de una hoja de Google con las citas (columnas: fecha, hora). Opcional.
 var SHEET_CSV_URL='';
 function taken(){return OCUPADAS[f.value]||[]}
@@ -224,7 +225,7 @@ function horas(){
  if(!h.querySelector('.chip:not(:disabled)'))$('hmsg').textContent='Ya no hay horarios libres este día. Elige otro día.';
  upd();
 }
-f.onchange=horas;f.oninput=horas;
+f.onchange=horas;f.oninput=horas;window.BA_horas=horas;
 $('camh').onclick=function(){$('hrs').classList.remove('picked');this.hidden=true};
 function fechaTxt(){var p=f.value.split('-'),d=new Date(+p[0],p[1]-1,+p[2]);return d.toLocaleDateString('es-MX',{weekday:'long',day:'numeric',month:'long'})}
 function foto(){var bx=$('svfoto');if(!bx)return;bx.innerHTML='';if(sel.s===null){bx.style.display='none';return}bx.style.display='';var s=SERVICIOS[sel.s];if(s.f){var im=document.createElement('img');im.src=s.f;im.alt=s.n;bx.appendChild(im)}else{bx.textContent='Aquí va la foto de «'+s.n+'»'}}
@@ -239,9 +240,16 @@ $('go').onclick=function(){
  var s=SERVICIOS[sel.s];
  var txt='Hola Alex, quiero reservar una cita.\nServicio: '+s.n+' ($'+s.p+')\nDía: '+fechaTxt()+'\nHora: '+sel.h+' h\nNombre: '+nom+(tel?'\nTeléfono: '+tel:'');
  
- msg.textContent='Abriendo WhatsApp. Tu cita queda confirmada cuando Alex te responda.';
- window.open('https://wa.me/'+NUM+'?text='+encodeURIComponent(txt),'_blank');
- horas();
+ var url='https://wa.me/'+NUM+'?text='+encodeURIComponent(txt);
+ if(!window.BA){msg.textContent='Abriendo WhatsApp. Tu cita queda confirmada cuando Alex te responda.';window.open(url,'_blank');horas();return}
+ var w=window.open('about:blank','_blank'),btn=$('go');btn.disabled=true;msg.textContent='Guardando tu reserva...';
+ window.BA.reservar({servicio:s.n,precio:s.p,fecha:f.value,hora:sel.h,nombre:nom,tel:tel}).then(function(){
+  msg.textContent='¡Listo! Tu hora quedó apartada. Te abrimos WhatsApp para avisarle a Alex.';
+  if(w)w.location.href=url;else location.href=url;
+ }).catch(function(e){
+  if(w)w.close();
+  msg.textContent=(e&&e.code==='permission-denied')?'Esa hora acaba de ser tomada. Elige otra.':'No se pudo guardar la reserva. Intenta de nuevo.';
+ }).then(function(){btn.disabled=false;horas()});
 };
 if(BOOKING_URL){
  var bk=document.querySelector('.book');
@@ -280,6 +288,7 @@ $('avg').innerHTML='<span class="num">'+prom.toFixed(1)+'</span><div><div class=
 $('dejar').href='https://wa.me/529852853426?text='+encodeURIComponent('Hola Alex, quiero dejar mi reseña.\nCalificación (1 a 5 estrellas): \nComentario: ');
 })();
 </script>
+<div class="modal" id="pa" role="dialog" aria-label="Reservas del día"><div class="sheet"><button class="x" id="pcl" type="button" aria-label="Cerrar">×</button><h3 style="font:700 1.7rem 'Barlow Condensed',sans-serif;margin:6px 0 12px">Reservas del día</h3><input type="date" id="pd"><p class="msg" id="pn"></p><div id="pl"></div><p class="msg" id="pm"></p></div></div>
 <script>window.FIREBASE_CONFIG={apiKey:'AIzaSyCIm_2Bu-cijI5wf3jdTW5gn2C2XH6co2U',authDomain:'barber-alex-5f82d.firebaseapp.com',projectId:'barber-alex-5f82d',appId:'1:37607267224:web:531febd1d13642b0d829ed'};</script>
 <script type="module">
 const C=window.FIREBASE_CONFIG;
@@ -314,10 +323,46 @@ $('renv').onclick=async()=>{
 };
 $('adm').hidden=false;
 if(location.hash==='#admin')$('ab').hidden=false;
-H.onAuthStateChanged(au,u=>{document.body.classList.toggle('admin',!!u);$('adm').textContent=u?'Salir':'Admin'});
+H.onAuthStateChanged(au,u=>{document.body.classList.toggle('admin',!!u);$('rsv').hidden=!u;$('adm').textContent=u?'Salir':'Admin'});
 $('adm').onclick=e=>{e.preventDefault();if(au.currentUser){H.signOut(au);return}$('ab').hidden=false};
-$('ain').onclick=async()=>{try{await H.signInWithEmailAndPassword(au,$('ae').value.trim(),$('ap').value);$('ab').hidden=true;$('ap').value='';$('am').textContent=''}catch(e){$('am').textContent='Correo o contraseña incorrectos.'}};
+$('ain').onclick=async()=>{try{await H.signInWithEmailAndPassword(au,$('ae').value.trim(),$('ap').value);$('ab').hidden=true;$('ap').value='';$('am').textContent='';abrirPanel()}catch(e){$('am').textContent='Correo o contraseña incorrectos.'}};
 $('acl').onclick=()=>{$('ab').hidden=true};
+window.BA={reservar:async d=>{const b=F.writeBatch(db);
+ b.set(F.doc(db,'ocupadas',d.fecha+'_'+d.hora),{fecha:d.fecha,hora:d.hora});
+ b.set(F.doc(F.collection(db,'reservas')),{servicio:d.servicio,precio:d.precio,fecha:d.fecha,hora:d.hora,nombre:d.nombre.slice(0,40),tel:(d.tel||'').slice(0,20),estado:'Pendiente',creada:F.serverTimestamp()});
+ await b.commit()}};
+let unO=null;const fe=$('fecha');
+const sub=()=>{if(unO)unO();unO=null;const d=fe.value;if(!d)return;
+ unO=F.onSnapshot(F.query(F.collection(db,'ocupadas'),F.where('fecha','==',d)),s=>{const hs=s.docs.map(x=>x.data().hora).sort(),a=window.OCUPADAS;
+  if(JSON.stringify(a[d]||[])!==JSON.stringify(hs)){a[d]=hs;if(fe.value===d&&window.BA_horas)window.BA_horas()}})};
+fe.addEventListener('change',sub);fe.addEventListener('input',sub);
+const pa=$('pa');let unR=null,unM=null;
+const hoy=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
+async function cambiar(r,e){try{await F.updateDoc(F.doc(db,'reservas',r.id),{estado:e});if(e==='Cancelada')await F.deleteDoc(F.doc(db,'ocupadas',r.fecha+'_'+r.hora))}catch(x){alert('No se pudo actualizar')}}
+function cargar(){
+ const d=$('pd').value;if(!d)return;
+ if(unR)unR();if(unM)unM();
+ unR=F.onSnapshot(F.query(F.collection(db,'reservas'),F.where('fecha','==',d)),snap=>{
+  const arr=snap.docs.map(x=>({id:x.id,...x.data()})).sort((a,b)=>a.hora<b.hora?-1:1),L=$('pl');L.innerHTML='';
+  if(!arr.length)L.innerHTML='<p class="msg">No hay reservas este día.</p>';
+  arr.forEach(r=>{const c=document.createElement('div');c.className='rv '+(r.estado||'');
+   c.innerHTML='<b></b><span></span><small></small><div class="acts"></div>';
+   c.querySelector('b').textContent=r.hora+' · '+r.nombre;c.querySelector('span').textContent=r.servicio+' · $'+r.precio;
+   c.querySelector('small').textContent=(r.tel?r.tel+' · ':'')+r.estado;
+   const A=c.querySelector('.acts');
+   [['Atendida','Atendida'],['Cancelar','Cancelada']].forEach(([t,e])=>{if(r.estado===e)return;const b=document.createElement('button');b.type='button';b.className='chip';b.textContent=t;b.onclick=()=>cambiar(r,e);A.appendChild(b)});
+   L.appendChild(c)});
+  $('pn').textContent=arr.filter(r=>r.estado==='Atendida').length+' atendidas de '+arr.filter(r=>r.estado!=='Cancelada').length+' reservas';
+ },()=>{$('pn').textContent='No se pudieron cargar las reservas.'});
+ const m=d.slice(0,7);
+ unM=F.onSnapshot(F.query(F.collection(db,'reservas'),F.where('fecha','>=',m+'-01'),F.where('fecha','<=',m+'-31')),s=>{$('pm').textContent='Cortes hechos este mes: '+s.docs.filter(x=>x.data().estado==='Atendida').length});
+}
+function abrirPanel(){if(!$('pd').value)$('pd').value=hoy();pa.classList.add('on');document.body.style.overflow='hidden';cargar()}
+function cerrarPanel(){pa.classList.remove('on');document.body.style.overflow='';if(unR)unR();if(unM)unM();unR=unM=null}
+$('pd').onchange=cargar;$('rsv').onclick=e=>{e.preventDefault();abrirPanel()};$('pcl').onclick=cerrarPanel;
+pa.onclick=e=>{if(e.target===pa)cerrarPanel()};
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&pa.classList.contains('on'))cerrarPanel()});
+
 }
 </script>
 </body>
