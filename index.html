@@ -55,7 +55,7 @@ input{width:100%;background:var(--bg);color:var(--text);border:1.5px solid var(-
 .info{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:28px}
 .info h3{font-size:1.4rem;margin-bottom:6px}
 .info p{margin:0;color:var(--muted)}
-.hours div{display:flex;justify-content:space-between;max-width:260px;color:var(--muted)}
+.hours div{display:flex;justify-content:space-between;gap:14px;max-width:360px;color:var(--muted)}
 footer{border-top:1px solid var(--line);padding:28px 0;color:var(--muted);text-align:center;font-size:.95rem}
 footer a{color:var(--text)}
 .svfoto{aspect-ratio:1;max-width:220px;margin-left:auto;margin-right:auto;border-radius:12px;overflow:hidden;background:var(--panel);border:1px solid var(--line);display:grid;place-items:center;color:var(--muted);margin-bottom:14px;text-align:center;padding:8px}.svfoto img{width:100%;height:100%;object-fit:cover;display:block}
@@ -152,8 +152,8 @@ footer a{color:var(--text)}
 <section id="contacto"><div class="wrap info">
   <div><h3>Dónde estamos</h3><p>Calle 12 x 9 y 11<br>Yalcobá, Yucatán, México<br>C.P. 97794</p></div>
   <div class="hours"><h3>Horario</h3>
-    <div><span>Lunes a sábado</span><span>10:00 – 20:00</span></div>
-    <div><span>Domingo</span><span>Cerrado</span></div></div>
+    <div><span>Lunes a viernes</span><span>8:00 a. m. – 12:00 p. m.</span></div>
+    <div><span>Sábado y domingo</span><span>8:00 a. m. – 7:30 p. m.</span></div></div>
   <div><h3>Contacto</h3><p><a href="tel:+529852853426" style="color:var(--text)">+52 985 285 3426</a><br><a href="https://wa.me/529852853426" style="color:var(--text)">Escríbenos por WhatsApp</a></p></div>
 </div></section>
 </main>
@@ -178,7 +178,9 @@ var SERVICIOS=[
  {n:'Servicio facial',d:'Vapor y limpieza facial',p:70,m:30,f:IMGS.f},
  {n:'Corte + facial',d:'Cualquier tipo de corte y servicio facial',p:150,m:60,f:IMGS.f}
 ];
-var ABRE=10,CIERRA=20,PASO=30; // lunes a sábado
+var ABRE=8,CIERRA=20,PASO=30; // lunes a sábado
+function h12(t){var p=t.split(':'),n=+p[0],s=n>=12?'p. m.':'a. m.';n=n%12||12;return n+':'+p[1]+' '+s}
+window.h12=h12;
 var sel={s:null,h:null},$=function(i){return document.getElementById(i)};
 var menu=$('menu'),svc=$('svc');
 var book=document.querySelector('.book'),home=book.parentNode,modal=$('modal'),slot=$('slot');
@@ -215,11 +217,11 @@ function horas(){
  var h=$('hrs');h.innerHTML='';sel.h=null;h.classList.remove('picked');$('camh').hidden=true;$('hmsg').textContent='';
  if(!f.value){$('hmsg').textContent='Elige primero un día.';upd();return}
  var p=f.value.split('-'),d=new Date(+p[0],p[1]-1,+p[2]);
- if(d.getDay()===0){$('hmsg').textContent='Los domingos estamos cerrados. Elige otro día.';upd();return}
+ var fin=(d.getDay()===0||d.getDay()===6)?19.5:12;
  var ocu=taken(),now=new Date(),esHoy=iso(now)===f.value;
- for(var m=ABRE*60;m<CIERRA*60;m+=PASO){
+ for(var m=ABRE*60;m<fin*60;m+=PASO){
   var t=String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0');
-  var b=document.createElement('button');b.type='button';b.className='chip';b.textContent=t;b.setAttribute('aria-pressed','false');
+  var b=document.createElement('button');b.type='button';b.className='chip';b.textContent=h12(t);b.setAttribute('aria-pressed','false');
   if(ocu.indexOf(t)>-1||(esHoy&&m<=now.getHours()*60+now.getMinutes()))b.disabled=true;
   (function(b,t){b.onclick=function(){sel.h=t;[].forEach.call(h.children,function(c){c.setAttribute('aria-pressed',c===b)});h.classList.add('picked');$('camh').hidden=false;upd()}})(b,t);
   h.appendChild(b);
@@ -233,14 +235,14 @@ function fechaTxt(){var p=f.value.split('-'),d=new Date(+p[0],p[1]-1,+p[2]);retu
 function foto(){var bx=$('svfoto');if(!bx)return;bx.innerHTML='';if(sel.s===null){bx.style.display='none';return}bx.style.display='';var s=SERVICIOS[sel.s];if(s.f){var im=document.createElement('img');im.src=s.f;im.alt=s.n;bx.appendChild(im)}else{bx.textContent='Aquí va la foto de «'+s.n+'»'}}
 function upd(){foto();
  var ok=sel.s!==null&&f.value&&sel.h;
- $('sum').textContent=ok?SERVICIOS[sel.s].n+' · '+fechaTxt()+' · '+sel.h+' h':(sel.s===null?'Aún no has elegido servicio, día y hora.':SERVICIOS[sel.s].n+' · elige el día y la hora.');
+ $('sum').textContent=ok?SERVICIOS[sel.s].n+' · '+fechaTxt()+' · '+h12(sel.h):(sel.s===null?'Aún no has elegido servicio, día y hora.':SERVICIOS[sel.s].n+' · elige el día y la hora.');
 }
 $('go').onclick=function(){
  var nom=$('nom').value.trim(),tel=$('tel').value.trim(),msg=$('msg');
  if(sel.s===null||!f.value||!sel.h){msg.textContent='Falta elegir servicio, día y hora.';return}
  if(!nom){msg.textContent='Escribe tu nombre para la reserva.';$('nom').focus();return}
  var s=SERVICIOS[sel.s];
- var txt='Hola Alex, quiero reservar una cita.\nServicio: '+s.n+' ($'+s.p+')\nDía: '+fechaTxt()+'\nHora: '+sel.h+' h\nNombre: '+nom+(tel?'\nTeléfono: '+tel:'');
+ var txt='Hola Alex, quiero reservar una cita.\nServicio: '+s.n+' ($'+s.p+')\nDía: '+fechaTxt()+'\nHora: '+h12(sel.h)+'\nNombre: '+nom+(tel?'\nTeléfono: '+tel:'');
  
  var url='https://wa.me/'+NUM+'?text='+encodeURIComponent(txt);
  if(!window.BA){msg.textContent='Abriendo WhatsApp. Tu cita queda confirmada cuando Alex te responda.';window.open(url,'_blank');horas();return}
@@ -348,7 +350,7 @@ function cargar(){
   if(!arr.length)L.innerHTML='<p class="msg">No hay reservas este día.</p>';
   arr.forEach(r=>{const c=document.createElement('div');c.className='rv '+(r.estado||'');
    c.innerHTML='<b></b><span></span><small></small><div class="acts"></div>';
-   c.querySelector('b').textContent=r.hora+' · '+r.nombre;c.querySelector('span').textContent=r.servicio+' · $'+r.precio;
+   c.querySelector('b').textContent=(window.h12?window.h12(r.hora):r.hora)+' · '+r.nombre;c.querySelector('span').textContent=r.servicio+' · $'+r.precio;
    c.querySelector('small').textContent=(r.tel?r.tel+' · ':'')+r.estado;
    const A=c.querySelector('.acts');
    [['Atendida','Atendida'],['Cancelar','Cancelada']].forEach(([t,e])=>{if(r.estado===e)return;const b=document.createElement('button');b.type='button';b.className='chip';b.textContent=t;b.onclick=()=>cambiar(r,e);A.appendChild(b)});
